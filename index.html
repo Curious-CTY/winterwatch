@@ -48,7 +48,41 @@
     <div id="answer"></div>
   </section>
 
+  <!-- 3. ROUTE POINTS (Part 2): one GPS point roughly halfway along each route. -->
+  <section>
+    <h2>Route points</h2>
+    <p class="sub">Method: driving route between the two ends from OSRM on OpenStreetMap data, then the point halfway along it by distance, checked with OpenStreetMap's address lookup. Map data © OpenStreetMap contributors (ODbL).</p>
+    <div style="overflow-x:auto">
+      <table id="routesTable" style="width:100%; border-collapse:collapse; font-size:14px">
+        <thead><tr><th align="left">Route</th><th align="left">Lat</th><th align="left">Lon</th><th align="left">How I chose it</th><th align="left">Map</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </section>
+
   <script>
+    // --- Part 2: the ten route points (lat, lon) and how each was chosen ---
+    const ROUTES = [
+      { id: 'R01', name: 'N3 Cavan Bypass',          lat: 54.02247, lon: -7.35223, how: 'Halfway along the Cavan Bypass (N3), from the Dublin Road roundabout (south end) to the start of the Belturbet Bypass (north end).' },
+      { id: 'R02', name: 'N54 Butlersbridge Road',   lat: 54.01884, lon: -7.34439, how: 'Halfway on the drive from Cavan town to Butlersbridge. The route uses the N3 bypass, so this point is close to R01.' },
+      { id: 'R03', name: 'R212 Belturbet Road',      lat: 54.05195, lon: -7.38404, how: 'Halfway on the drive from Cavan town to Belturbet, on the N3 near Butlersbridge.' },
+      { id: 'R04', name: 'R154 Kilnaleck Uplands',   lat: 53.84317, lon: -7.27018, how: 'Halfway on the drive from Kilnaleck to Ballyjamesduff, on Granard Road.' },
+      { id: 'R05', name: 'R165 Bailieborough Road',  lat: 53.94161, lon: -7.17517, how: 'Halfway on the drive from Cavan town to Bailieborough along the R165 (Bailieborough Road). Forcing the route through Killinkere village sent it down the N3, so I used the R165.' },
+      { id: 'R06', name: 'Lough Gowna Lake Road',    lat: 53.90136, lon: -7.38000, how: 'Halfway on the drive from Ballyjamesduff to Lough Gowna village, on Ballinagh Road. The drive is 32 km, longer than the 12 km in the council file.' },
+      { id: 'R07', name: 'R188 Cootehill Road',      lat: 54.04318, lon: -7.23500, how: 'Halfway on the drive from Cavan town to Cootehill, on Cootehill Road near Drung.' },
+      { id: 'R08', name: 'N87 Ballyconnell Road',    lat: 54.08615, lon: -7.52476, how: 'Halfway on the drive from Belturbet to Ballyconnell, on Ballyconnell Road (N87).' },
+      { id: 'R09', name: 'N3 Virginia South',        lat: 53.93361, lon: -7.21775, how: 'Halfway on the drive from Cavan town to Virginia, on the N3 (Cavan Road).' },
+      { id: 'R10', name: 'R162 Kingscourt Hill',     lat: 53.93251, lon: -6.88429, how: 'Halfway on the drive from Bailieborough to Kingscourt, on Bailieborough Road.' }
+    ];
+
+    function showRoutes() {
+      const rows = ROUTES.map(r => {
+        const map = `https://www.openstreetmap.org/?mlat=${r.lat}&mlon=${r.lon}#map=15/${r.lat}/${r.lon}`;
+        return `<tr style="border-top:1px solid #dde3ea"><td><b>${r.id}</b> ${r.name}</td><td>${r.lat}</td><td>${r.lon}</td><td>${r.how}</td><td><a href="${map}" target="_blank">Open map</a></td></tr>`;
+      });
+      document.querySelector('#routesTable tbody').innerHTML = rows.join('');
+    }
+
     // --- Settings: save / load / forget the key in this browser's localStorage ---
     const $ = id => document.getElementById(id);
 
@@ -128,6 +162,7 @@
     };
 
     loadSettings();
+    showRoutes();
   </script>
 </body>
 </html>
