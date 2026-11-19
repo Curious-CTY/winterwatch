@@ -74,6 +74,25 @@
     </div>
   </section>
 
+  <!-- 5. TONIGHT'S RECOMMENDATION (Part 3b): the rulebook applied by code, route by route. -->
+  <section>
+    <h2>Tonight's recommendation</h2>
+    <p class="sub">Rules: Winter Service Plan sections 3 to 5. Depots: tonight's depot sheet. Weather: the table above. The Duty Engineer makes the final decision.</p>
+    <div style="overflow-x:auto">
+      <table id="decisionTable" style="width:100%; border-collapse:collapse; font-size:14px">
+        <thead><tr><th align="left">Route</th><th align="left">P</th><th align="left">Depot</th><th align="left">Decision</th><th align="left">Why</th><th align="left">Trucks leave</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+    <h3>Depots tonight</h3>
+    <div style="overflow-x:auto">
+      <table id="depotTable" style="width:100%; border-collapse:collapse; font-size:14px">
+        <thead><tr><th align="left">Depot</th><th align="left">Salt</th><th align="left">Full</th><th align="left">Trucks</th><th align="left">Sheet note</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </section>
+
   <script>
     // --- Part 2: the ten route points (lat, lon) and how each was chosen ---
     const ROUTES = [
@@ -227,9 +246,94 @@
         ' · <a href="' + FORECAST_URL + '" target="_blank">see the raw forecast data</a>';
     }
 
+    // --- Part 3b: the council's files, read fresh every time ---
+    const DATA = 'https://bdaib-hub.pages.dev/data/winter/';
+    const CAPACITY_T = { Cavan: 900, Ballyjamesduff: 420, Bailieborough: 18, Cootehill: 300, Virginia: 320 }; // plan section 5
+    const LIMIT_C = { 1: 1.0, 2: 0.5, 3: -1.0 };                                                          // plan section 3
+    let COUNCIL_ROUTES = [], DEPOTS = [], DECISIONS = [];
+
+    // Tiny CSV reader: handles "quoted, values" with commas inside
+    function parseCSV(text) {
+      const rows = []; let row = [], cell = '', q = false;
+      for (let i = 0; i < text.length; i++) {
+        const ch = text[i];
+        if (q) { if (ch === '"' && text[i + 1] === '"') { cell += '"'; i++; } else if (ch === '"') q = false; else cell += ch; }
+        else if (ch === '"') q = true;
+        else if (ch === ',') { row.push(cell); cell = ''; }
+        else if (ch === '\n' || ch === '\r') { if (ch === '\r' && text[i + 1] === '\n') i++; row.push(cell); rows.push(row); row = []; cell = ''; }
+        else cell += ch;
+      }
+      if (cell || row.length) { row.push(cell); rows.push(row); }
+      const [head, ...body] = rows.filter(r => r.length > 1);
+      return body.map(r => Object.fromEntries(head.map((h, i) => [h, r[i]])));
+    }
+    async function getCSV(name) {
+      const res = await fetch(DATA + name);
+      if (!res.ok) throw new Error('Could not read ' + name);
+      return parseCSV(await res.text());
+    }
+
+    // Clock helpers: the night runs past midnight, so 03:00 counts as "later" than 22:00
+    const toMin = t => { const [h, m] = t.split(':').map(Number); return (h < 12 ? h + 24 : h) * 60 + m; };
+    const toClock = n => { const h = Math.floor(n / 60) % 24, m = Math.round(n % 60); return String(h).padStart(2, '0') + ':' + String(m).padStart(2, '0'); };
+
+    function decide() {
+      // What each depot has left tonight; we "spend" salt and trucks as routes are given them
+      const left = {};
+      DEPOTS.forEach(d => left[d.depot] = { salt: +d.salt_stock_t, trucks: +d.trucks_ready });
+
+      // Plan section 5: Priority 1 comes first, so decide in priority order
+      const order = [...COUNCIL_ROUTES].sort((a, b) => a.priority - b.priority || a.route_id.localeCompare(b.route_id));
+      DECISIONS = order.map(r => {
+        const w = TONIGHT.find(t => t.id === r.route_id);
+        const p = +r.priority, need = +r.salt_needed_t, km = +r.length_km;
+        const depot = DEPOTS.find(d => d.depot === r.depot);
+        const stockPct = Math.round(100 * depot.salt_stock_t / CAPACITY_T[r.depot]);
+        const base = { id: r.route_id, name: r.route, priority: p, depot: r.depot, leave: '' };
+
+        // 1. Cold enough for this priority?
+        if (w.minGround > LIMIT_C[p])
+          return { ...base, decision: "Don't treat", why: `Lowest ground ${w.minGround} °C stays above the P${p} limit of ${LIMIT_C[p]} °C (plan 3).` };
+        // 2. Could the road be wet?
+        if (!w.wet)
+          return { ...base, decision: "Don't treat", why: `Ground reaches ${w.minGround} °C but the road stays dry: dry frost, nothing to freeze (plan 3).` };
+        // 3. Priority 3 only: depot at least 40% full?
+        if (p === 3 && stockPct < 40)
+          return { ...base, decision: 'Hold back', why: `Cold (${w.minGround} °C) and wet, but ${r.depot} is only ${stockPct}% full; P3 needs 40% (plan 3).` };
+        // 4. Salt and a truck at the depot tonight?
+        const L = left[r.depot];
+        if (L.trucks < 1 || L.salt < need)
+          return { ...base, decision: 'Flag to engineer', why: `Needs treating (${w.minGround} °C, wet) but ${r.depot} has ` +
+            (L.trucks < 1 ? 'no truck ready' : `only ${L.salt} t of salt for ${need} t needed`) + ' tonight.' };
+        // 5. Treat: finish 1 hour before the ground reaches 0 °C; about 1 hour per 20 km; between 17:00 and 05:00 (plan 4)
+        L.trucks -= 1; L.salt = Math.round((L.salt - need) * 100) / 100;
+        const target = w.firstZeroAt || w.minGroundAt;          // never reaches 0 °C? aim for the coldest hour
+        let leave = toMin(target) - 60 - (km / 20) * 60;
+        leave = Math.max(toMin('17:00'), Math.min(toMin('05:00'), leave));
+        return { ...base, decision: 'Treat', leave: toClock(leave),
+          why: `Ground ${w.minGround} °C (P${p} limit ${LIMIT_C[p]} °C), wet (${w.wetWhy}). ` +
+               `${w.firstZeroAt ? 'Reaches 0 °C at ' + w.firstZeroAt : 'Coldest at ' + w.minGroundAt}; ${km} km ≈ ${Math.round(km / 20 * 60)} min run. ` +
+               `Uses ${need} t, ${r.depot} keeps ${L.salt} t.` };
+      });
+    }
+
+    const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+    function showDecisions() {
+      const colour = { 'Treat': '#1f7a3a', "Don't treat": '#5b6b7d', 'Hold back': '#a86b00', 'Flag to engineer': '#b3261e' };
+      document.querySelector('#decisionTable tbody').innerHTML = DECISIONS.map(d =>
+        `<tr style="border-top:1px solid #dde3ea"><td><b>${d.id}</b> ${esc(d.name)}</td><td>${d.priority}</td><td>${esc(d.depot)}</td>` +
+        `<td style="color:${colour[d.decision]}; font-weight:600">${d.decision}</td><td>${esc(d.why)}</td><td>${d.leave || '—'}</td></tr>`).join('');
+      document.querySelector('#depotTable tbody').innerHTML = DEPOTS.map(d =>
+        `<tr style="border-top:1px solid #dde3ea"><td>${esc(d.depot)}</td><td>${esc(d.salt_stock_t)} t of ${CAPACITY_T[d.depot]} t</td>` +
+        `<td>${Math.round(100 * d.salt_stock_t / CAPACITY_T[d.depot])}%</td><td>${esc(d.trucks_ready)}</td><td>${esc(d.notes)}</td></tr>`).join('');
+    }
+
     $('getWeather').onclick = async () => {
-      $('weatherStatus').textContent = 'Getting the forecast…';
-      try { await getTonight(); showTonight(); }
+      $('weatherStatus').textContent = 'Getting the forecast and the council files…';
+      try {
+        [COUNCIL_ROUTES, DEPOTS] = await Promise.all([getCSV('routes-named.csv'), getCSV('tonight.csv'), getTonight()]);
+        showTonight(); decide(); showDecisions();
+      }
       catch (e) { $('weatherStatus').textContent = 'Error: ' + e.message; }
     };
 
