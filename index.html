@@ -4,95 +4,212 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Winter Watch</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <style>
-    body { font-family: system-ui, sans-serif; max-width: 760px; margin: 0 auto; padding: 16px; background: #f6f8fb; color: #1d2733; }
-    h1 { margin-bottom: 4px; }
-    .sub { color: #5b6b7d; margin-top: 0; }
-    section { background: #fff; border: 1px solid #dde3ea; border-radius: 10px; padding: 16px; margin: 16px 0; }
-    label { display: block; font-weight: 600; margin: 8px 0 4px; }
-    input, select, textarea { width: 100%; box-sizing: border-box; padding: 8px; font: inherit; border: 1px solid #c4ccd6; border-radius: 6px; }
-    button { margin-top: 10px; padding: 8px 14px; font: inherit; border: 0; border-radius: 6px; background: #1f5fae; color: #fff; cursor: pointer; }
-    button.secondary { background: #8a96a5; }
-    #status { margin-top: 8px; color: #5b6b7d; }
-    #answer { white-space: pre-wrap; margin-top: 12px; }
+    :root {
+      --bg: #f2f5fa; --card: #ffffff; --ink: #14202e; --muted: #64748b; --line: #e3e9f1;
+      --navy: #0d2440; --blue: #2563eb; --ice: #e0edff;
+      --green: #15803d; --green-bg: #dcfce7; --grey: #475569; --grey-bg: #eef2f6;
+      --amber: #b45309; --amber-bg: #fef3c7; --red: #b91c1c; --red-bg: #fee2e2;
+      --radius: 14px; --shadow: 0 1px 2px rgba(16,32,56,.06), 0 4px 16px rgba(16,32,56,.06);
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: Inter, system-ui, sans-serif; background: var(--bg); color: var(--ink); line-height: 1.5; }
+    a { color: var(--blue); }
+    .wrap { max-width: 1100px; margin: 0 auto; padding: 0 16px; }
+
+    /* Header */
+    header { background: linear-gradient(135deg, #0b1d36 0%, #123a6b 60%, #1d5aa6 100%); color: #fff; padding: 28px 0 72px; }
+    .brand { display: flex; align-items: center; gap: 12px; }
+    .logo { width: 44px; height: 44px; border-radius: 12px; background: rgba(255,255,255,.14); display: grid; place-items: center; font-size: 24px; }
+    header h1 { margin: 0; font-size: 28px; font-weight: 800; letter-spacing: -.02em; }
+    header p { margin: 4px 0 0; color: #c7d8f2; font-size: 15px; }
+    .head-row { display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap; }
+    .live { display: inline-flex; align-items: center; gap: 8px; background: rgba(255,255,255,.12); padding: 8px 12px; border-radius: 999px; font-size: 13px; color: #e6efff; }
+    .dot { width: 8px; height: 8px; border-radius: 50%; background: #4ade80; box-shadow: 0 0 0 4px rgba(74,222,128,.25); }
+    .live a { color: #fff; }
+
+    /* Summary cards */
+    .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; margin-top: -48px; }
+    .stat { background: var(--card); border-radius: var(--radius); box-shadow: var(--shadow); padding: 16px; border-top: 4px solid var(--line); }
+    .stat .label { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); }
+    .stat .value { font-size: 30px; font-weight: 800; margin-top: 2px; }
+    .stat .hint { font-size: 13px; color: var(--muted); }
+    .stat.treat { border-top-color: var(--green); } .stat.treat .value { color: var(--green); }
+    .stat.flag  { border-top-color: var(--red); }   .stat.flag  .value { color: var(--red); }
+    .stat.hold  { border-top-color: #f59e0b; }      .stat.hold  .value { color: var(--amber); }
+    .stat.none  { border-top-color: #94a3b8; }      .stat.none  .value { color: var(--grey); }
+    .stat.cold  { border-top-color: var(--blue); }  .stat.cold  .value { color: var(--blue); }
+
+    /* Cards */
+    .card { background: var(--card); border-radius: var(--radius); box-shadow: var(--shadow); padding: 20px; margin: 20px 0; }
+    .card h2 { margin: 0; font-size: 19px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+    .card .sub { color: var(--muted); font-size: 13.5px; margin: 4px 0 14px; }
+    .step { font-size: 11px; font-weight: 700; color: var(--blue); background: var(--ice); padding: 2px 8px; border-radius: 999px; }
+
+    /* Tables */
+    .table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 10px; }
+    table { width: 100%; border-collapse: collapse; font-size: 14px; }
+    th { text-align: left; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); background: #f8fafc; padding: 10px 12px; white-space: nowrap; }
+    td { padding: 12px; border-top: 1px solid var(--line); vertical-align: top; }
+    tr:hover td { background: #fafcff; }
+    .rid { font-weight: 700; color: var(--navy); }
+    .rname { color: var(--muted); font-size: 13px; }
+    .why { color: #334155; font-size: 13px; min-width: 260px; }
+    .time { font-weight: 700; font-variant-numeric: tabular-nums; font-size: 15px; }
+
+    /* Badges and chips */
+    .badge { display: inline-block; padding: 4px 10px; border-radius: 999px; font-size: 12.5px; font-weight: 700; white-space: nowrap; }
+    .b-treat { background: var(--green-bg); color: var(--green); }
+    .b-none  { background: var(--grey-bg); color: var(--grey); }
+    .b-hold  { background: var(--amber-bg); color: var(--amber); }
+    .b-flag  { background: var(--red-bg); color: var(--red); }
+    .pri { display: inline-block; min-width: 28px; text-align: center; padding: 2px 6px; border-radius: 6px; font-size: 12px; font-weight: 700; background: var(--ice); color: var(--blue); }
+    .temp { display: inline-block; padding: 3px 8px; border-radius: 8px; font-weight: 700; font-variant-numeric: tabular-nums; }
+    .t-ice  { background: #1e40af; color: #fff; }
+    .t-cold { background: #bfdbfe; color: #1e3a8a; }
+    .t-mild { background: var(--grey-bg); color: var(--grey); }
+
+    /* Depots */
+    .depots { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px; }
+    .depot { border: 1px solid var(--line); border-radius: 12px; padding: 14px; }
+    .depot h3 { margin: 0 0 6px; font-size: 15px; }
+    .bar { height: 8px; background: var(--grey-bg); border-radius: 999px; overflow: hidden; margin: 6px 0; }
+    .bar span { display: block; height: 100%; border-radius: 999px; }
+    .depot .meta { font-size: 13px; color: var(--muted); }
+    .depot .note { font-size: 12.5px; margin-top: 8px; padding: 8px; background: #f8fafc; border-radius: 8px; color: #334155; }
+
+    /* Ask */
+    textarea, input, select { width: 100%; padding: 11px 12px; font: inherit; font-size: 15px; border: 1px solid #cfd8e3; border-radius: 10px; background: #fff; color: var(--ink); }
+    textarea:focus, input:focus, select:focus { outline: 2px solid var(--blue); outline-offset: 1px; border-color: transparent; }
+    .chips { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0; }
+    .chip { border: 1px solid var(--line); background: #f8fafc; color: var(--ink); padding: 6px 12px; border-radius: 999px; font-size: 13px; cursor: pointer; margin: 0; font-weight: 500; }
+    .chip:hover { background: var(--ice); border-color: #bcd3f7; }
+    button { font: inherit; font-weight: 600; border: 0; border-radius: 10px; padding: 10px 18px; background: var(--blue); color: #fff; cursor: pointer; }
+    button:hover { filter: brightness(1.08); }
+    button.ghost { background: var(--grey-bg); color: var(--ink); }
+    .row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+    #answer { margin-top: 16px; padding: 16px 18px; background: #f8fafc; border-left: 4px solid var(--blue); border-radius: 10px; font-size: 15px; display: none; }
+    #answer ul { margin: 6px 0; padding-left: 20px; }
+    #answer p { margin: 6px 0; }
+    #answer .tokens { color: var(--muted); font-size: 12px; margin-top: 10px; }
+    details { margin-top: 12px; }
+    summary { cursor: pointer; color: var(--muted); font-size: 13.5px; }
+    pre { white-space: pre-wrap; font-size: 12px; background: #0f172a; color: #e2e8f0; padding: 14px; border-radius: 10px; max-height: 360px; overflow: auto; }
+
+    /* Settings */
+    .grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; }
+    label { display: block; font-weight: 600; font-size: 13px; margin-bottom: 6px; color: #334155; }
+    #status { font-size: 13px; color: var(--muted); }
+
+    footer { color: var(--muted); font-size: 12.5px; padding: 8px 0 40px; }
   </style>
 </head>
 <body>
-  <h1>Winter Watch</h1>
-  <p class="sub">Decision support for the County Cavan roads team. It recommends; the Duty Engineer decides.</p>
 
-  <!-- 1. SETTINGS: which AI to use and your key. The key is saved only in THIS browser. -->
-  <section>
-    <h2>Settings</h2>
-    <label for="provider">Provider</label>
-    <select id="provider">
-      <option value="gemini">Google Gemini</option>
-    </select>
-
-    <label for="model">Model</label>
-    <input id="model" value="gemini-3.8-flash">
-
-    <label for="key">API key</label>
-    <input id="key" type="password" placeholder="Paste your key here (never in the code)">
-
-    <button id="save">Save</button>
-    <button id="forget" class="secondary">Forget key</button>
-    <div id="status"></div>
-  </section>
-
-  <!-- 2. QUESTION: type a question, the page sends it to your AI and shows the answer. -->
-  <section>
-    <h2>Ask Winter Watch</h2>
-    <textarea id="question" rows="3" placeholder="e.g. Do we grit tonight?"></textarea>
-    <button id="ask">Ask</button>
-    <div id="answer"></div>
-    <details style="margin-top:12px"><summary>What was sent to the brain</summary><pre id="sent" style="white-space:pre-wrap; font-size:12px"></pre></details>
-  </section>
-
-  <!-- 3. ROUTE POINTS (Part 2): one GPS point roughly halfway along each route. -->
-  <section>
-    <h2>Route points</h2>
-    <p class="sub">Method: driving route between the two ends from OSRM on OpenStreetMap data, then the point halfway along it by distance, checked with OpenStreetMap's address lookup. Map data © OpenStreetMap contributors (ODbL).</p>
-    <div style="overflow-x:auto">
-      <table id="routesTable" style="width:100%; border-collapse:collapse; font-size:14px">
-        <thead><tr><th align="left">Route</th><th align="left">Lat</th><th align="left">Lon</th><th align="left">How I chose it</th><th align="left">Map</th></tr></thead>
-        <tbody></tbody>
-      </table>
+  <!-- HEADER -->
+  <header>
+    <div class="wrap head-row">
+      <div class="brand">
+        <div class="logo">❄️</div>
+        <div>
+          <h1>Winter Watch</h1>
+          <p>Gritting decision support · County Cavan roads team</p>
+        </div>
+      </div>
+      <div class="live"><span class="dot"></span><span id="weatherStatus">Loading tonight's forecast…</span></div>
     </div>
-  </section>
+  </header>
 
-  <!-- 4. TONIGHT'S WEATHER (Part 3a): live forecast for each route point, 18:00 tonight to 09:00 tomorrow. -->
-  <section>
-    <h2>Tonight's weather</h2>
-    <p class="sub">Source: <a href="https://open-meteo.com/" target="_blank">Open-Meteo</a> forecast API (free, no key, CC BY 4.0). Ground = soil temperature at 0 cm, our stand-in for the road surface. Night = 18:00 to 09:00, Irish time.</p>
-    <button id="getWeather">Get tonight's forecast</button>
-    <div id="weatherStatus" style="margin-top:8px; color:#5b6b7d"></div>
-    <div style="overflow-x:auto">
-      <table id="weatherTable" style="width:100%; border-collapse:collapse; font-size:14px; margin-top:8px">
-        <thead><tr><th align="left">Route</th><th align="left">Lowest ground</th><th align="left">First at 0 °C or below</th><th align="left">Lowest air</th><th align="left">Rain</th><th align="left">Could be wet?</th></tr></thead>
-        <tbody></tbody>
-      </table>
-    </div>
-  </section>
+  <main class="wrap">
 
-  <!-- 5. TONIGHT'S RECOMMENDATION (Part 3b): the rulebook applied by code, route by route. -->
-  <section>
-    <h2>Tonight's recommendation</h2>
-    <p class="sub">Rules: Winter Service Plan sections 3 to 5. Depots: tonight's depot sheet. Weather: the table above. The Duty Engineer makes the final decision.</p>
-    <div style="overflow-x:auto">
-      <table id="decisionTable" style="width:100%; border-collapse:collapse; font-size:14px">
-        <thead><tr><th align="left">Route</th><th align="left">P</th><th align="left">Depot</th><th align="left">Decision</th><th align="left">Why</th><th align="left">Trucks leave</th></tr></thead>
-        <tbody></tbody>
-      </table>
+    <!-- SUMMARY CARDS -->
+    <div class="stats">
+      <div class="stat treat"><div class="label">Treat</div><div class="value" id="sTreat">–</div><div class="hint">routes to grit</div></div>
+      <div class="stat flag"><div class="label">Flag</div><div class="value" id="sFlag">–</div><div class="hint">need the engineer</div></div>
+      <div class="stat hold"><div class="label">Hold back</div><div class="value" id="sHold">–</div><div class="hint">salt too low</div></div>
+      <div class="stat none"><div class="label">Don't treat</div><div class="value" id="sNone">–</div><div class="hint">not needed</div></div>
+      <div class="stat cold"><div class="label">Coldest road</div><div class="value" id="sCold">–</div><div class="hint" id="sColdWhere">&nbsp;</div></div>
     </div>
-    <h3>Depots tonight</h3>
-    <div style="overflow-x:auto">
-      <table id="depotTable" style="width:100%; border-collapse:collapse; font-size:14px">
-        <thead><tr><th align="left">Depot</th><th align="left">Salt</th><th align="left">Full</th><th align="left">Trucks</th><th align="left">Sheet note</th></tr></thead>
-        <tbody></tbody>
-      </table>
-    </div>
-  </section>
+
+    <!-- 1. TONIGHT'S RECOMMENDATION (Part 3b): the rulebook applied by code, route by route. -->
+    <section class="card">
+      <h2>🚦 Tonight's recommendation <span class="step">PART 3</span></h2>
+      <p class="sub">Code applies Winter Service Plan sections 3–5 to the forecast and tonight's depot sheet. It recommends; the Duty Engineer decides.</p>
+      <div class="table-wrap">
+        <table id="decisionTable">
+          <thead><tr><th>Route</th><th>Priority</th><th>Depot</th><th>Decision</th><th>Trucks leave</th><th>Why</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- 2. ASK (Part 1 + 3c): the brain explains the decisions. -->
+    <section class="card">
+      <h2>💬 Ask Winter Watch <span class="step">AI</span></h2>
+      <p class="sub">Your question goes to your own AI with the rulebook, the 10 decisions and the depot sheet. The AI explains; it does not decide.</p>
+      <textarea id="question" rows="3" placeholder="e.g. Do we grit tonight? Which routes, and when do the trucks leave?"></textarea>
+      <div class="chips">
+        <button class="chip" data-q="Do we grit tonight? Which routes, and when do the trucks leave?">Do we grit tonight?</button>
+        <button class="chip" data-q="Which routes have a problem tonight, and what should the Duty Engineer do about them?">Any problems tonight?</button>
+        <button class="chip" data-q="Explain the decision for R02 and why it differs from R01.">Why not R02?</button>
+      </div>
+      <div class="row"><button id="ask">Ask</button></div>
+      <div id="answer"></div>
+      <details><summary>What was sent to the AI</summary><pre id="sent">Nothing sent yet.</pre></details>
+    </section>
+
+    <!-- 3. DEPOTS -->
+    <section class="card">
+      <h2>🏭 Depots tonight</h2>
+      <p class="sub">From the council's depot sheet (tonight.csv). Capacity from plan section 5.</p>
+      <div class="depots" id="depotCards"></div>
+    </section>
+
+    <!-- 4. TONIGHT'S WEATHER (Part 3a): live forecast for each route point, 18:00 tonight to 09:00 tomorrow. -->
+    <section class="card">
+      <h2>🌡️ Tonight's weather <span class="step">PART 3</span></h2>
+      <p class="sub">Source: <a href="https://open-meteo.com/" target="_blank">Open-Meteo</a> forecast API (free, no key, CC BY 4.0). Ground = soil temperature at 0 cm, our stand-in for the road surface. Night = 18:00 to 09:00, Irish time.</p>
+      <div class="table-wrap">
+        <table id="weatherTable">
+          <thead><tr><th>Route</th><th>Lowest ground</th><th>First at 0 °C</th><th>Lowest air</th><th>Rain</th><th>Could be wet?</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <div class="row" style="margin-top:12px"><button id="getWeather" class="ghost">↻ Refresh forecast</button></div>
+    </section>
+
+    <!-- 5. ROUTE POINTS (Part 2): one GPS point roughly halfway along each route. -->
+    <section class="card">
+      <h2>📍 Route points <span class="step">PART 2</span></h2>
+      <p class="sub">Method: driving route between the two ends from OSRM on OpenStreetMap data, then the point halfway along it by distance, checked with OpenStreetMap's address lookup. Map data © OpenStreetMap contributors (ODbL).</p>
+      <div class="table-wrap">
+        <table id="routesTable">
+          <thead><tr><th>Route</th><th>Lat</th><th>Lon</th><th>How I chose it</th><th>Map</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- 6. SETTINGS (Part 1): which AI to use and your key. The key is saved only in THIS browser. -->
+    <section class="card">
+      <h2>⚙️ AI settings <span class="step">PART 1</span></h2>
+      <p class="sub">Your key is saved only in this browser. It is never in the code or on GitHub.</p>
+      <div class="grid2">
+        <div><label for="provider">Provider</label><select id="provider"><option value="gemini">Google Gemini</option></select></div>
+        <div><label for="model">Model</label><input id="model" value="gemini-3.8-flash"></div>
+        <div><label for="key">API key</label><input id="key" type="password" placeholder="Paste your key here"></div>
+      </div>
+      <div class="row" style="margin-top:12px">
+        <button id="save">Save</button>
+        <button id="forget" class="ghost">Forget key</button>
+        <span id="status"></span>
+      </div>
+    </section>
+
+    <footer>Winter Watch is a practice project. The roads team, its rules and records are fictional; the roads, towns and weather are real. Weather: Open-Meteo (CC BY 4.0). Maps: © OpenStreetMap contributors.</footer>
+  </main>
 
   <script>
     // --- Part 2: the ten route points (lat, lon) and how each was chosen ---
@@ -109,41 +226,41 @@
       { id: 'R10', name: 'R162 Kingscourt Hill',     lat: 53.93251, lon: -6.88429, how: 'Halfway on the drive from Bailieborough to Kingscourt, on Bailieborough Road.' }
     ];
 
+    const $ = id => document.getElementById(id);
+    const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
     function showRoutes() {
-      const rows = ROUTES.map(r => {
+      document.querySelector('#routesTable tbody').innerHTML = ROUTES.map(r => {
         const map = `https://www.openstreetmap.org/?mlat=${r.lat}&mlon=${r.lon}#map=15/${r.lat}/${r.lon}`;
-        return `<tr style="border-top:1px solid #dde3ea"><td><b>${r.id}</b> ${r.name}</td><td>${r.lat}</td><td>${r.lon}</td><td>${r.how}</td><td><a href="${map}" target="_blank">Open map</a></td></tr>`;
-      });
-      document.querySelector('#routesTable tbody').innerHTML = rows.join('');
+        return `<tr><td><div class="rid">${r.id}</div><div class="rname">${r.name}</div></td><td>${r.lat}</td><td>${r.lon}</td>` +
+               `<td class="why">${r.how}</td><td><a href="${map}" target="_blank">Open map ↗</a></td></tr>`;
+      }).join('');
     }
 
     // --- Settings: save / load / forget the key in this browser's localStorage ---
-    const $ = id => document.getElementById(id);
-
     function loadSettings() {
       try {
         $('key').value = localStorage.getItem('ww_key') || '';
         $('model').value = localStorage.getItem('ww_model') || $('model').value;
       } catch (e) { /* storage blocked: the page still works, you just retype the key */ }
-      $('status').textContent = $('key').value ? 'Key loaded from this browser.' : 'No key saved yet.';
+      $('status').textContent = $('key').value ? '✓ Key loaded from this browser' : 'No key saved yet';
     }
 
     $('save').onclick = () => {
       try {
         localStorage.setItem('ww_key', $('key').value.trim());
         localStorage.setItem('ww_model', $('model').value.trim());
-        $('status').textContent = 'Saved in this browser only.';
-      } catch (e) { $('status').textContent = 'Could not save (browser storage blocked).'; }
+        $('status').textContent = '✓ Saved in this browser only';
+      } catch (e) { $('status').textContent = 'Could not save (browser storage blocked)'; }
     };
 
     $('forget').onclick = () => {
       try { localStorage.removeItem('ww_key'); } catch (e) {}
       $('key').value = '';
-      $('status').textContent = 'Key forgotten.';
+      $('status').textContent = 'Key forgotten';
     };
 
-    // --- The brain: send one question to Gemini and return its text answer ---
-    // The brain's job description (system instruction). It explains; it never decides or changes numbers.
+    // --- The brain's job description (system instruction). It explains; it never decides or changes numbers. ---
     const BRAIN_RULES = [
       'You are Winter Watch, a decision-support assistant for the roads team of County Cavan.',
       'You recommend; the Duty Engineer decides. Never say a truck has been sent.',
@@ -153,10 +270,11 @@
       'Give each number with its source (forecast, depot sheet, plan section). Be short and clear, and end with one line the Duty Engineer can approve or reject.'
     ].join(' ');
 
+    // --- Send one message to Gemini, with timeout and retry ---
     async function askGemini(question) {
       const key = $('key').value.trim();
       const model = $('model').value.trim();
-      if (!key) throw new Error('Add your API key in Settings first.');
+      if (!key) throw new Error('Add your API key in AI settings (bottom of the page) first.');
 
       const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
       const body = JSON.stringify({
@@ -187,15 +305,29 @@
           if (attempt === TRIES) throw new Error('Gemini did not answer in time. Try again later or try another model.');
         } finally { clearTimeout(timer); }
         const wait = attempt * 3;                             // 3s, then 6s
-        $('answer').textContent = `Gemini is busy, retrying in ${wait}s (try ${attempt + 1} of ${TRIES})…`;
+        showAnswer(`<p>⏳ Gemini is busy, retrying in ${wait}s (try ${attempt + 1} of ${TRIES})…</p>`);
         await new Promise(r => setTimeout(r, wait * 1000));
       }
       const text = data.candidates?.[0]?.content?.parts?.map(p => p.text).join('') || '(no answer)';
-      const used = data.usageMetadata
-        ? `\n\n— tokens: ${data.usageMetadata.promptTokenCount} in, ${data.usageMetadata.candidatesTokenCount} out`
-        : '';
-      return text + used;
+      const u = data.usageMetadata;
+      return { text, tokens: u ? `${u.promptTokenCount} tokens in · ${u.candidatesTokenCount} tokens out` : '' };
     }
+
+    // Turn the AI's simple Markdown (**bold**, bullet lists, headings) into tidy HTML
+    function renderMarkdown(md) {
+      const inline = s => esc(s).replace(/\*\*(.+?)\*\*/g, '<b>$1</b>').replace(/`(.+?)`/g, '<code>$1</code>');
+      let html = '', inList = false;
+      for (const line of md.split('\n')) {
+        const item = line.match(/^\s*[-*•]\s+(.*)/) || line.match(/^\s*\d+\.\s+(.*)/);
+        if (item) { if (!inList) { html += '<ul>'; inList = true; } html += '<li>' + inline(item[1]) + '</li>'; continue; }
+        if (inList) { html += '</ul>'; inList = false; }
+        const h = line.match(/^#{1,4}\s+(.*)/);
+        if (h) html += '<p><b>' + inline(h[1]) + '</b></p>';
+        else if (line.trim()) html += '<p>' + inline(line) + '</p>';
+      }
+      return html + (inList ? '</ul>' : '');
+    }
+    function showAnswer(html) { $('answer').style.display = 'block'; $('answer').innerHTML = html; }
 
     // --- Part 3c: one short, labelled message for the brain ---
     let PLAN_TEXT = '';
@@ -214,20 +346,23 @@
     }
 
     $('ask').onclick = async () => {
-      $('answer').textContent = 'Getting fresh weather…';
+      if (!$('question').value.trim()) { $('question').focus(); return; }
+      showAnswer('<p>🔄 Getting fresh weather…</p>');
       try {
         await refreshAll();                                   // fresh forecast for every question
         if (!PLAN_TEXT) PLAN_TEXT = await (await fetch(DATA + 'plan.md')).text();
         const message = buildMessage($('question').value);
         $('sent').textContent = message;                      // show exactly what the brain receives
-        $('answer').textContent = 'Thinking…';
-        $('answer').textContent = await askGemini(message);
+        showAnswer('<p>🧠 Thinking…</p>');
+        const a = await askGemini(message);
+        showAnswer(renderMarkdown(a.text) + (a.tokens ? `<div class="tokens">${a.tokens}</div>` : ''));
       }
-      catch (e) { $('answer').textContent = 'Error: ' + e.message; }
+      catch (e) { showAnswer('<p style="color:var(--red)"><b>Error:</b> ' + esc(e.message) + '</p>'); }
     };
+    document.querySelectorAll('.chip').forEach(c => c.onclick = () => { $('question').value = c.dataset.q; $('ask').click(); });
 
     // --- Part 3a: tonight's forecast for all ten points, in ONE call to Open-Meteo ---
-    let TONIGHT = [];          // one summary per route; Part 3b will use this
+    let TONIGHT = [];          // one summary per route
     let FORECAST_URL = '';     // the exact address we called, so every number has a source
 
     async function getTonight() {
@@ -247,10 +382,10 @@
 
       TONIGHT = ROUTES.map((route, i) => {
         const h = places[i].hourly;
-        const start = h.time.indexOf(today + 'T18:00');   // the night starts at 18:00 today...
+        const start = h.time.indexOf(today + 'T18:00');   // the night starts at 18:00...
         if (start < 0 || start + 15 > h.time.length) throw new Error('Forecast does not cover tonight (' + today + ')');
         const hours = [];
-        for (let k = start; k < start + 15; k++) {          // ...and runs 15 hours, to 09:00 tomorrow
+        for (let k = start; k < start + 15; k++) {          // ...and runs 15 hours, to 09:00 the next morning
           hours.push({ time: h.time[k].slice(11), ground: h.soil_temperature_0cm[k],
                        air: h.temperature_2m[k], dew: h.dew_point_2m[k], rain: h.rain[k] });
         }
@@ -271,15 +406,18 @@
       });
     }
 
+    // Colour a temperature: blue below 0 °C, light blue up to +1 °C, grey above
+    const tempChip = c => `<span class="temp ${c <= 0 ? 't-ice' : c <= 1 ? 't-cold' : 't-mild'}">${c > 0 ? '+' : ''}${c} °C</span>`;
+
     function showTonight() {
       document.querySelector('#weatherTable tbody').innerHTML = TONIGHT.map(t =>
-        `<tr style="border-top:1px solid #dde3ea"><td><b>${t.id}</b> ${t.name}</td>` +
-        `<td>${t.minGround} °C at ${t.minGroundAt}</td>` +
-        `<td>${t.firstZeroAt || 'stays above 0 °C'}</td>` +
-        `<td>${t.minAir} °C</td><td>${t.rainMm} mm</td>` +
-        `<td>${t.wet ? 'yes (' + t.wetWhy + ')' : 'no, dry'}</td></tr>`).join('');
-      $('weatherStatus').innerHTML = 'Fetched ' + new Date().toLocaleTimeString() +
-        ' · <a href="' + FORECAST_URL + '" target="_blank">see the raw forecast data</a>';
+        `<tr><td><div class="rid">${t.id}</div><div class="rname">${t.name}</div></td>` +
+        `<td>${tempChip(t.minGround)} <span class="rname">at ${t.minGroundAt}</span></td>` +
+        `<td>${t.firstZeroAt ? '<span class="time">' + t.firstZeroAt + '</span>' : '<span class="rname">stays above 0 °C</span>'}</td>` +
+        `<td>${tempChip(t.minAir)}</td><td>${t.rainMm} mm</td>` +
+        `<td>${t.wet ? '💧 yes <span class="rname">(' + t.wetWhy + ')</span>' : '☀️ no, dry'}</td></tr>`).join('');
+      $('weatherStatus').innerHTML = 'Live forecast · updated ' + new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) +
+        ' · <a href="' + FORECAST_URL + '" target="_blank">raw data</a>';
     }
 
     // --- Part 3b: the council's files, read fresh every time ---
@@ -353,15 +491,38 @@
       });
     }
 
-    const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+    const BADGE = { 'Treat': 'b-treat', "Don't treat": 'b-none', 'Hold back': 'b-hold', 'Flag to engineer': 'b-flag' };
+    const ICON  = { 'Treat': '✅', "Don't treat": '⚪', 'Hold back': '⏸️', 'Flag to engineer': '🚩' };
+
     function showDecisions() {
-      const colour = { 'Treat': '#1f7a3a', "Don't treat": '#5b6b7d', 'Hold back': '#a86b00', 'Flag to engineer': '#b3261e' };
-      document.querySelector('#decisionTable tbody').innerHTML = DECISIONS.map(d =>
-        `<tr style="border-top:1px solid #dde3ea"><td><b>${d.id}</b> ${esc(d.name)}</td><td>${d.priority}</td><td>${esc(d.depot)}</td>` +
-        `<td style="color:${colour[d.decision]}; font-weight:600">${d.decision}</td><td>${esc(d.why)}</td><td>${d.leave || '—'}</td></tr>`).join('');
-      document.querySelector('#depotTable tbody').innerHTML = DEPOTS.map(d =>
-        `<tr style="border-top:1px solid #dde3ea"><td>${esc(d.depot)}</td><td>${esc(d.salt_stock_t)} t of ${CAPACITY_T[d.depot]} t</td>` +
-        `<td>${Math.round(100 * d.salt_stock_t / CAPACITY_T[d.depot])}%</td><td>${esc(d.trucks_ready)}</td><td>${esc(d.notes)}</td></tr>`).join('');
+      // Decision table: most urgent first (flags, then treats by leaving time, then hold, then don't treat)
+      const rank = { 'Flag to engineer': 0, 'Treat': 1, 'Hold back': 2, "Don't treat": 3 };
+      const sorted = [...DECISIONS].sort((a, b) => rank[a.decision] - rank[b.decision] || (a.leave || '').localeCompare(b.leave || '') || a.id.localeCompare(b.id));
+      document.querySelector('#decisionTable tbody').innerHTML = sorted.map(d =>
+        `<tr><td><div class="rid">${d.id}</div><div class="rname">${esc(d.name)}</div></td>` +
+        `<td><span class="pri">P${d.priority}</span></td><td>${esc(d.depot)}</td>` +
+        `<td><span class="badge ${BADGE[d.decision]}">${ICON[d.decision]} ${d.decision}</span></td>` +
+        `<td>${d.leave ? '<span class="time">🚛 ' + d.leave + '</span>' : '<span class="rname">—</span>'}</td>` +
+        `<td class="why">${esc(d.why)}</td></tr>`).join('');
+
+      // Summary cards
+      const count = k => DECISIONS.filter(d => d.decision === k).length;
+      $('sTreat').textContent = count('Treat'); $('sFlag').textContent = count('Flag to engineer');
+      $('sHold').textContent = count('Hold back'); $('sNone').textContent = count("Don't treat");
+      const cold = TONIGHT.reduce((a, b) => (b.minGround < a.minGround ? b : a));
+      $('sCold').textContent = cold.minGround + '°'; $('sColdWhere').textContent = cold.id + ' ' + cold.name + ', ' + cold.minGroundAt;
+
+      // Depot cards with a salt bar
+      $('depotCards').innerHTML = DEPOTS.map(d => {
+        const pct = Math.round(100 * d.salt_stock_t / CAPACITY_T[d.depot]);
+        const colour = pct < 30 ? 'var(--red)' : pct < 40 ? '#f59e0b' : 'var(--green)';
+        const trucks = +d.trucks_ready;
+        return `<div class="depot"><h3>${esc(d.depot)}</h3>` +
+          `<div class="meta">Salt <b style="color:var(--ink)">${esc(d.salt_stock_t)} t</b> of ${CAPACITY_T[d.depot]} t · ${pct}%</div>` +
+          `<div class="bar"><span style="width:${Math.min(pct, 100)}%; background:${colour}"></span></div>` +
+          `<div class="meta">${trucks ? '🚛 ' + trucks + ' truck' + (trucks > 1 ? 's' : '') + ' ready' : '<span style="color:var(--red); font-weight:600">🚫 No truck ready</span>'} · 👷 ${esc(d.drivers_on_call)} drivers</div>` +
+          `<div class="note">📝 ${esc(d.notes)}</div></div>`;
+      }).join('');
     }
 
     async function refreshAll() {
