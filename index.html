@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Winter Watch</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 760px; margin: 0 auto; padding: 16px; background: #f6f8fb; color: #1d2733; }
+    h1 { margin-bottom: 4px; }
+    .sub { color: #5b6b7d; margin-top: 0; }
+    section { background: #fff; border: 1px solid #dde3ea; border-radius: 10px; padding: 16px; margin: 16px 0; }
+    label { display: block; font-weight: 600; margin: 8px 0 4px; }
+    input, select, textarea { width: 100%; box-sizing: border-box; padding: 8px; font: inherit; border: 1px solid #c4ccd6; border-radius: 6px; }
+    button { margin-top: 10px; padding: 8px 14px; font: inherit; border: 0; border-radius: 6px; background: #1f5fae; color: #fff; cursor: pointer; }
+    button.secondary { background: #8a96a5; }
+    #status { margin-top: 8px; color: #5b6b7d; }
+    #answer { white-space: pre-wrap; margin-top: 12px; }
+  </style>
+</head>
+<body>
+  <h1>Winter Watch</h1>
+  <p class="sub">Decision support for the County Cavan roads team. It recommends; the Duty Engineer decides.</p>
+
+  <!-- 1. SETTINGS: which AI to use and your key. The key is saved only in THIS browser. -->
+  <section>
+    <h2>Settings</h2>
+    <label for="provider">Provider</label>
+    <select id="provider">
+      <option value="gemini">Google Gemini</option>
+    </select>
+
+    <label for="model">Model</label>
+    <input id="model" value="gemini-2.5-flash">
+
+    <label for="key">API key</label>
+    <input id="key" type="password" placeholder="Paste your key here (never in the code)">
+
+    <button id="save">Save</button>
+    <button id="forget" class="secondary">Forget key</button>
+    <div id="status"></div>
+  </section>
+
+  <!-- 2. QUESTION: type a question, the page sends it to your AI and shows the answer. -->
+  <section>
+    <h2>Ask Winter Watch</h2>
+    <textarea id="question" rows="3" placeholder="e.g. Do we grit tonight?"></textarea>
+    <button id="ask">Ask</button>
+    <div id="answer"></div>
+  </section>
+
+  <script>
+    // --- Settings: save / load / forget the key in this browser's localStorage ---
+    const $ = id => document.getElementById(id);
+
+    function loadSettings() {
+      try {
+        $('key').value = localStorage.getItem('ww_key') || '';
+        $('model').value = localStorage.getItem('ww_model') || $('model').value;
+      } catch (e) { /* storage blocked: the page still works, you just retype the key */ }
+      $('status').textContent = $('key').value ? 'Key loaded from this browser.' : 'No key saved yet.';
+    }
+
+    $('save').onclick = () => {
+      try {
+        localStorage.setItem('ww_key', $('key').value.trim());
+        localStorage.setItem('ww_model', $('model').value.trim());
+        $('status').textContent = 'Saved in this browser only.';
+      } catch (e) { $('status').textContent = 'Could not save (browser storage blocked).'; }
+    };
+
+    $('forget').onclick = () => {
+      try { localStorage.removeItem('ww_key'); } catch (e) {}
+      $('key').value = '';
+      $('status').textContent = 'Key forgotten.';
+    };
+
+    // --- The brain: send one question to Gemini and return its text answer ---
+    async function askGemini(question) {
+      const key = $('key').value.trim();
+      const model = $('model').value.trim();
+      if (!key) throw new Error('Add your API key in Settings first.');
+
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-goog-api-key': key },
+        body: JSON.stringify({
+          systemInstruction: { parts: [{ text:
+            'You are Winter Watch, a decision-support assistant for a roads team. ' +
+            'You recommend; a person decides. Be short and clear.' }] },
+          contents: [{ role: 'user', parts: [{ text: question }] }]
+        })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ? data.error.message : 'Request failed');
+      const text = data.candidates?.[0]?.content?.parts?.map(p => p.text).join('') || '(no answer)';
+      const used = data.usageMetadata
+        ? `\n\n— tokens: ${data.usageMetadata.promptTokenCount} in, ${data.usageMetadata.candidatesTokenCount} out`
+        : '';
+      return text + used;
+    }
+
+    $('ask').onclick = async () => {
+      $('answer').textContent = 'Thinking…';
+      try { $('answer').textContent = await askGemini($('question').value); }
+      catch (e) { $('answer').textContent = 'Error: ' + e.message; }
+    };
+
+    loadSettings();
+  </script>
+</body>
+</html>
