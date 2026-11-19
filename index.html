@@ -60,6 +60,20 @@
     </div>
   </section>
 
+  <!-- 4. TONIGHT'S WEATHER (Part 3a): live forecast for each route point, 18:00 tonight to 09:00 tomorrow. -->
+  <section>
+    <h2>Tonight's weather</h2>
+    <p class="sub">Source: <a href="https://open-meteo.com/" target="_blank">Open-Meteo</a> forecast API (free, no key, CC BY 4.0). Ground = soil temperature at 0 cm, our stand-in for the road surface. Night = 18:00 to 09:00, Irish time.</p>
+    <button id="getWeather">Get tonight's forecast</button>
+    <div id="weatherStatus" style="margin-top:8px; color:#5b6b7d"></div>
+    <div style="overflow-x:auto">
+      <table id="weatherTable" style="width:100%; border-collapse:collapse; font-size:14px; margin-top:8px">
+        <thead><tr><th align="left">Route</th><th align="left">Lowest ground</th><th align="left">First at 0 °C or below</th><th align="left">Lowest air</th><th align="left">Rain</th><th align="left">Could be wet?</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </section>
+
   <script>
     // --- Part 2: the ten route points (lat, lon) and how each was chosen ---
     const ROUTES = [
@@ -161,8 +175,67 @@
       catch (e) { $('answer').textContent = 'Error: ' + e.message; }
     };
 
+    // --- Part 3a: tonight's forecast for all ten points, in ONE call to Open-Meteo ---
+    let TONIGHT = [];          // one summary per route; Part 3b will use this
+    let FORECAST_URL = '';     // the exact address we called, so every number has a source
+
+    async function getTonight() {
+      // Today's date in Ireland, e.g. "2026-11-19"
+      const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Dublin' }).format(new Date());
+      FORECAST_URL = 'https://api.open-meteo.com/v1/forecast'
+        + '?latitude=' + ROUTES.map(r => r.lat).join(',')
+        + '&longitude=' + ROUTES.map(r => r.lon).join(',')
+        + '&hourly=temperature_2m,soil_temperature_0cm,dew_point_2m,rain'
+        + '&timezone=Europe%2FDublin&forecast_days=2';
+      const res = await fetch(FORECAST_URL);
+      if (!res.ok) throw new Error('Forecast service did not answer (' + res.status + ')');
+      const places = await res.json();           // one block of hourly data per route, same order as ROUTES
+
+      TONIGHT = ROUTES.map((route, i) => {
+        const h = places[i].hourly;
+        const start = h.time.indexOf(today + 'T18:00');   // the night starts at 18:00 today...
+        const hours = [];
+        for (let k = start; k < start + 15; k++) {          // ...and runs 15 hours, to 09:00 tomorrow
+          hours.push({ time: h.time[k].slice(11), ground: h.soil_temperature_0cm[k],
+                       air: h.temperature_2m[k], dew: h.dew_point_2m[k], rain: h.rain[k] });
+        }
+        const coldest = hours.reduce((a, b) => (b.ground < a.ground ? b : a));
+        const firstFreeze = hours.find(x => x.ground <= 0);
+        const rainTotal = hours.reduce((s, x) => s + x.rain, 0);
+        // Plan section 3: wet = rain, or a dew point within 1 C of the ground temperature
+        const dampHour = hours.find(x => x.ground - x.dew <= 1);
+        return {
+          id: route.id, name: route.name,
+          minGround: coldest.ground, minGroundAt: coldest.time,
+          firstZeroAt: firstFreeze ? firstFreeze.time : null,
+          minAir: Math.min(...hours.map(x => x.air)),
+          rainMm: Math.round(rainTotal * 10) / 10,
+          wet: rainTotal > 0 || !!dampHour,
+          wetWhy: rainTotal > 0 ? 'rain' : (dampHour ? 'dew point within 1 °C at ' + dampHour.time : 'dry')
+        };
+      });
+    }
+
+    function showTonight() {
+      document.querySelector('#weatherTable tbody').innerHTML = TONIGHT.map(t =>
+        `<tr style="border-top:1px solid #dde3ea"><td><b>${t.id}</b> ${t.name}</td>` +
+        `<td>${t.minGround} °C at ${t.minGroundAt}</td>` +
+        `<td>${t.firstZeroAt || 'stays above 0 °C'}</td>` +
+        `<td>${t.minAir} °C</td><td>${t.rainMm} mm</td>` +
+        `<td>${t.wet ? 'yes (' + t.wetWhy + ')' : 'no, dry'}</td></tr>`).join('');
+      $('weatherStatus').innerHTML = 'Fetched ' + new Date().toLocaleTimeString() +
+        ' · <a href="' + FORECAST_URL + '" target="_blank">see the raw forecast data</a>';
+    }
+
+    $('getWeather').onclick = async () => {
+      $('weatherStatus').textContent = 'Getting the forecast…';
+      try { await getTonight(); showTonight(); }
+      catch (e) { $('weatherStatus').textContent = 'Error: ' + e.message; }
+    };
+
     loadSettings();
     showRoutes();
+    $('getWeather').click();   // fetch fresh weather every time the page opens
   </script>
 </body>
 </html>
