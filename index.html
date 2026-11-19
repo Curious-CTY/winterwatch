@@ -30,7 +30,7 @@
     </select>
 
     <label for="model">Model</label>
-    <input id="model" value="gemini-2.5-flash">
+    <input id="model" value="gemini-3.8-flash">
 
     <label for="key">API key</label>
     <input id="key" type="password" placeholder="Paste your key here (never in the code)">
@@ -81,18 +81,39 @@
       if (!key) throw new Error('Add your API key in Settings first.');
 
       const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
-      const res = await fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'x-goog-api-key': key },
-        body: JSON.stringify({
-          systemInstruction: { parts: [{ text:
-            'You are Winter Watch, a decision-support assistant for a roads team. ' +
-            'You recommend; a person decides. Be short and clear.' }] },
-          contents: [{ role: 'user', parts: [{ text: question }] }]
-        })
+      const body = JSON.stringify({
+        systemInstruction: { parts: [{ text:
+          'You are Winter Watch, a decision-support assistant for a roads team. ' +
+          'You recommend; a person decides. Be short and clear.' }] },
+        contents: [{ role: 'user', parts: [{ text: question }] }]
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error ? data.error.message : 'Request failed');
+
+      // Try up to 3 times. Each try waits at most 30 seconds (timeout).
+      // If Google is busy (503/429) or too slow, wait a bit and try again (retry).
+      const TRIES = 3, TIMEOUT_MS = 30000;
+      let data;
+      for (let attempt = 1; attempt <= TRIES; attempt++) {
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
+        try {
+          const res = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'x-goog-api-key': key },
+            body, signal: controller.signal
+          });
+          data = await res.json();
+          if (res.ok) break;                                  // success: stop trying
+          const busy = res.status === 503 || res.status === 429;
+          if (!busy || attempt === TRIES) throw new Error(data.error ? data.error.message : 'Request failed');
+        } catch (e) {
+          const slow = e.name === 'AbortError';
+          if (!slow) { if (attempt === TRIES || !/busy|demand|overload/i.test(e.message)) throw e; }
+          if (attempt === TRIES) throw new Error('Gemini did not answer in time. Try again later or try another model.');
+        } finally { clearTimeout(timer); }
+        const wait = attempt * 3;                             // 3s, then 6s
+        $('answer').textContent = `Gemini is busy, retrying in ${wait}s (try ${attempt + 1} of ${TRIES})…`;
+        await new Promise(r => setTimeout(r, wait * 1000));
+      }
       const text = data.candidates?.[0]?.content?.parts?.map(p => p.text).join('') || '(no answer)';
       const used = data.usageMetadata
         ? `\n\n— tokens: ${data.usageMetadata.promptTokenCount} in, ${data.usageMetadata.candidatesTokenCount} out`
